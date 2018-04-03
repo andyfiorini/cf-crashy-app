@@ -10,4 +10,4 @@ debug:
 	gdb ./crashy 
 
 test:
-
+	(./putcrash.sh | telnet 192.168.11.11 80;echo )
