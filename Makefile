@@ -9,5 +9,8 @@ push:
 debug:
 	gdb ./crashy 
 
-test:
+crash:
 	(./putcrash.sh | telnet 192.168.11.11 80;echo )
+
+test:
+	curl -v -k crashy.local.pcfdev.io
