@@ -10,21 +10,23 @@
 
 #define BUFSIZE 2048
 
-int main(int argc, char **argv[]) {
+#define ENVMSG "Please set the PORT environment variable\n"
+#define STARTMSG "Starting the crashy application...\n"
+
+int main(int argc, char **argv) {
 
 	char buffer[BUFSIZE];
 	char protoname[] = "tcp";
 	struct protoent *protoent;
-	int i;
 	int newline_found = 0;
 	int enable = 1;
 	int server_sockfd, client_sockfd;
 	socklen_t client_len;
 	ssize_t nbytes_read;
 	struct sockaddr_in client_address, server_address;
-	unsigned short server_port = 12345u;
+	/* unsigned short server_port = 12345u; */
 
-	printf("Starting crashy application...\n");
+	write(1, STARTMSG, strlen(STARTMSG));
 	const char* PORT = getenv("PORT");
 	   
         printf("PORT var value is %s.\n", PORT);
@@ -53,7 +55,12 @@ int main(int argc, char **argv[]) {
 
         server_address.sin_family = AF_INET;
         server_address.sin_addr.s_addr = htonl(INADDR_ANY);
-        server_address.sin_port = htons((short int)strtol(PORT, NULL, 10));
+	if ( PORT != NULL ) {
+          server_address.sin_port = htons((short int)strtol(PORT, NULL, 10));
+	} else {
+          write(1, ENVMSG, strlen(ENVMSG));
+	  exit(250);
+	}
         if (bind(
                 server_sockfd,
                 (struct sockaddr*)&server_address,
@@ -78,16 +85,20 @@ int main(int argc, char **argv[]) {
                 &client_len
             );
 
-	    sprintf(buffer,"HTTP/1.0 200 OK\r\nContent-Type: html\r\n\r\n", client_sockfd);
+	    sprintf(buffer,(const char *)"HTTP/1.0 200 OK\r\nContent-Type: html\r\n\r\n");
 	    write(client_sockfd, buffer, strlen(buffer));
+
             while ((nbytes_read = read(client_sockfd, buffer, BUFSIZE)) > 0) {
                 write(STDOUT_FILENO, buffer, nbytes_read);
-                if ((strncmp(buffer, "crash", 5)) == 0) {
+                if ((strstr(buffer, "crash\r\n")) != NULL) {
+	            sprintf(buffer,(const char *) "*** Closing connection on crash...\r\r\n");
+	            write(client_sockfd, buffer, strlen(buffer));
+                    write(1, buffer, strlen(buffer));
                     close(client_sockfd);
                     exit(254);
                 }
                 if (buffer[nbytes_read - 1] == '\n')
-                    newline_found;
+                    newline_found=1;
 		strcpy(buffer, "hello\n");
                 write(client_sockfd, buffer, nbytes_read);
                 if ((strstr(buffer, "Mozilla")) != NULL) {
@@ -99,5 +110,4 @@ int main(int argc, char **argv[]) {
             close(client_sockfd);
         }
         return EXIT_SUCCESS;  
-
 }
