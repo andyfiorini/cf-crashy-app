@@ -17,6 +17,17 @@ To push the app:
 ```shell
 $ make 
 ```
-
+To build and push:
+```
+$ make all
+```
+or simply 
+```
+$ make
+```
+To test the app in cf-dev:
+```
+$ make test
+```
 
 
